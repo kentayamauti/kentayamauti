@@ -1,0 +1,8 @@
+name = "fudosan-sentei-api"
+main = "src/index.js"
+compatibility_date = "2025-01-01"
+
+[vars]
+# サイトを公開するURLを入れると、そのサイトからしか使えなくなります（カンマ区切り）
+# 例: ALLOWED_ORIGINS = "https://kentayamauti.github.io"
+ALLOWED_ORIGINS = ""

@@ -111,6 +111,7 @@
   var AREA_LABEL = { kakogawa: '加古川市', takasago: '高砂市', himeji: '姫路市', amagasaki: '尼崎市' };
   var STORAGE_KEY = 'fudosan-sentei-candidates';
   var simForm = document.getElementById('sim-form');
+  var siteRisks = []; // 住所検索で見つかった立地リスク（シミュレーターの注意点に表示）
   var lastResult = null;
 
   function num(form, name) {
@@ -184,6 +185,7 @@
     if (split) notes.push('分筆費用を控除しています。分筆後の各区画が接道・最低敷地面積を満たすか確認してください。');
     if (gross < 10) notes.push('表面利回りが10%未満です。戸建投資としては低めのため、指値の検討をおすすめします。');
     if (f.elements.area.value === 'amagasaki') notes.push('尼崎市南部は高潮・浸水リスクの確認が特に重要です。');
+    notes = notes.concat(siteRisks);
     if (margin < 0) notes.push('土地値ベースで ' + man(-margin) + ' 不足。この金額だけ購入価格を下げられれば安全圏です。');
 
     return {
@@ -336,8 +338,10 @@
         geoStatus.innerHTML = '📍 ' + esc(title) + '（' + lat + ', ' + lon + '）' +
           (area ? '' : '<br>※ 対象4市（加古川・高砂・姫路・尼崎）以外の可能性があります。');
         showLinks(address, lat, lon);
+        loadSiteData(lat, lon);
       })
       .catch(function () {
+        clearSiteData();
         applyArea(address);
         geoStatus.textContent = '位置を特定できませんでした。住所で各サイトを開けるようにしています。';
         showLinks(address, null, null);
@@ -356,6 +360,118 @@
           navigator.clipboard.writeText(currentAddress).catch(function () {});
         }
       });
+    });
+  }
+
+  // Site data via the relay Worker (不動産情報ライブラリ)
+  var API_BASE = ((window.SENTEI_CONFIG || {}).apiBase || '').replace(/\/$/, '');
+  var geoData = document.getElementById('geo-data');
+  var lookupSeq = 0;
+
+  function yen(v) { return v == null ? '—' : Math.round(v).toLocaleString('ja-JP') + '円'; }
+
+  function clearSiteData() {
+    siteRisks = [];
+    if (geoData) { geoData.hidden = true; geoData.innerHTML = ''; }
+    if (simForm) simForm.dispatchEvent(new Event('change'));
+  }
+
+  function loadSiteData(lat, lon) {
+    clearSiteData();
+    if (!API_BASE || !geoData) return;
+    var seq = ++lookupSeq;
+    geoData.hidden = false;
+    geoData.innerHTML = '<p class="geo-loading">地価・成約事例・ハザードを取得中…</p>';
+    fetch(API_BASE + '/lookup?lat=' + lat + '&lon=' + lon)
+      .then(function (res) { if (!res.ok) throw new Error(res.status); return res.json(); })
+      .then(function (data) { if (seq === lookupSeq) renderSiteData(data); })
+      .catch(function () {
+        if (seq === lookupSeq) geoData.innerHTML = '<p class="geo-loading">データを取得できませんでした。上のリンクから確認してください。</p>';
+      });
+  }
+
+  function section(title, body) { return '<div class="gd-sec"><h4>' + title + '</h4>' + body + '</div>'; }
+  function failed() { return '<p class="gd-muted">取得できませんでした</p>'; }
+
+  function renderSiteData(d) {
+    var html = '';
+    siteRisks = [];
+
+    // 公示地価 → 推定路線価
+    var lp = d.landPrices || {};
+    if (lp.ok && lp.value.points.length) {
+      var pts = lp.value.points;
+      var nearest = pts[0];
+      var est = Math.round(nearest.price * 0.8 / 1000) * 1000;
+      html += section('近隣の地価公示・地価調査（住宅地・' + lp.value.year + '年）',
+        '<ul class="gd-list">' + pts.slice(0, 3).map(function (p) {
+          return '<li><span>' + esc(p.label || '標準地') + '<small>約' + (p.distance >= 1000 ? (p.distance / 1000).toFixed(1) + 'km' : p.distance + 'm') + '</small></span><strong>' + yen(p.price) + '/㎡</strong></li>';
+        }).join('') + '</ul>' +
+        '<div class="gd-estimate"><p>推定路線価 <strong>' + yen(est) + '/㎡</strong><small>最寄り地点 × 0.8</small></p>' +
+        '<button type="button" class="btn btn-ghost btn-sm" data-rosenka="' + est + '">前面路線価に入力</button></div>' +
+        (nearest.distance > 1000 ? '<p class="gd-warn">最寄りの地点が1km以上離れています。推定値の信頼度は低めです。</p>' : '') +
+        '<p class="gd-muted">前面道路の実際の路線価は、全国地価マップか路線価図で必ず確認してください。</p>');
+    } else {
+      html += section('近隣の地価公示・地価調査', lp.ok ? '<p class="gd-muted">近くに住宅地の地点がありません</p>' : failed());
+    }
+
+    // 成約・取引事例
+    var tx = d.transactions || {};
+    if (tx.ok && tx.value) {
+      var t = tx.value;
+      var useDistrict = t.landUnitPrice.district.count > 0;
+      var lu = useDistrict ? t.landUnitPrice.district : t.landUnitPrice.city;
+      var hp = t.housePrice.district.count > 0 ? t.housePrice.district : t.housePrice.city;
+      var scope = useDistrict ? esc(t.district) : '市全体';
+      html += section('取引・成約事例（' + t.years[0] + '〜' + t.years[1] + '年）',
+        '<ul class="gd-list">' +
+        '<li><span>土地 ㎡単価の中央値<small>' + scope + '・' + lu.count + '件</small></span><strong>' + (lu.count ? yen(lu.median) + '/㎡' : '—') + '</strong></li>' +
+        '<li><span>戸建（土地と建物）の中央値<small>' + (t.housePrice.district.count > 0 ? esc(t.district) : '市全体') + '・' + hp.count + '件</small></span><strong>' + (hp.count ? man(hp.median) : '—') + '</strong></li>' +
+        '</ul>' +
+        (t.samples.length ? '<details class="gd-samples"><summary>土地の取引事例を見る</summary><table><thead><tr><th>地区</th><th>時期</th><th>面積</th><th>㎡単価</th></tr></thead><tbody>' +
+          t.samples.map(function (s) {
+            return '<tr><td>' + esc(s.district) + '</td><td>' + esc(s.period.replace('第', 'Q').replace('四半期', '')) + '</td><td>' + (s.area || '—') + '㎡</td><td>' + yen(s.unitPrice) + '</td></tr>';
+          }).join('') + '</tbody></table></details>' : ''));
+    } else {
+      html += section('取引・成約事例', tx.ok ? '<p class="gd-muted">市区町村を特定できませんでした</p>' : failed());
+    }
+
+    // 用途地域
+    var zn = d.zoning || {};
+    html += section('用途地域', !zn.ok ? failed() : zn.value.inside
+      ? '<p>' + esc(zn.value.name) + '<small class="gd-inline">建蔽率 ' + esc(zn.value.buildingCoverageRatio || '—') + '／容積率 ' + esc(zn.value.floorAreaRatio || '—') + '</small></p>'
+      : '<p class="gd-warn">用途地域の指定なし（市街化調整区域などの可能性）。再建築の可否を必ず確認してください。</p>');
+    if (zn.ok && !zn.value.inside) siteRisks.push('用途地域の指定がない場所です。市街化調整区域の場合、再建築や融資に制限があることがあります。');
+
+    // ハザード
+    var hz = d.hazards || {};
+    var rows = [
+      ['洪水', hz.flood, function (v) { return '浸水想定区域内' + (v.maxRank ? '（浸水深ランク' + v.maxRank + '）' : '') + (v.rivers.length ? '・' + v.rivers.map(esc).join('、') : ''); }],
+      ['高潮', hz.stormSurge, function (v) { return '浸水想定区域内' + (v.depths.length ? '（' + v.depths.map(esc).join('、') + '）' : ''); }],
+      ['津波', hz.tsunami, function (v) { return '浸水想定区域内' + (v.depths.length ? '（' + v.depths.map(esc).join('、') + '）' : ''); }],
+      ['土砂災害', hz.landslide, function (v) { return esc(v.level) + 'に該当'; }]
+    ];
+    html += section('ハザード', '<ul class="gd-hazards">' + rows.map(function (r) {
+      var h = r[1];
+      if (!h || !h.ok) return '<li><span>' + r[0] + '</span><em class="gd-muted">取得できませんでした</em></li>';
+      if (!h.value.inside) return '<li><span>' + r[0] + '</span><em class="ok">✓ 区域外</em></li>';
+      siteRisks.push(r[0] + '：' + r[2](h.value).replace(/<[^>]*>/g, '') + '。保険料・入居付け・売却時に影響します。');
+      return '<li><span>' + r[0] + '</span><em class="ng">⚠ ' + r[2](h.value) + '</em></li>';
+    }).join('') + '</ul><p class="gd-muted">浸水深ランクの意味や詳細は重ねるハザードマップで確認してください。</p>');
+
+    html += '<p class="gd-source">出典：国土交通省 不動産情報ライブラリ、国土地理院</p>';
+    geoData.innerHTML = html;
+    geoData.hidden = false;
+    if (simForm) simForm.dispatchEvent(new Event('change'));
+  }
+
+  if (geoData) {
+    geoData.addEventListener('click', function (e) {
+      var v = e.target.getAttribute('data-rosenka');
+      if (!v || !simForm) return;
+      simForm.elements.rosenka.value = v;
+      simForm.dispatchEvent(new Event('input'));
+      simForm.elements.rosenka.focus();
     });
   }
 

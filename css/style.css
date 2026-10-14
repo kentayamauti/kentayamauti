@@ -292,3 +292,29 @@ a { color: var(--color-primary); }
 .geo-btn:hover { border-color: var(--color-primary); background: #fff; }
 .geo-btn small { display: block; font-weight: 400; font-size: .75rem; color: var(--color-muted); }
 .geo-btn[data-copy] small::after { content: "住所コピー"; display: block; color: var(--color-accent); }
+
+/* Site data (API) */
+.geo-data { margin-top: 12px; border-top: 1px solid var(--color-border); padding-top: 4px; }
+.geo-loading { font-size: .85rem; color: var(--color-muted); }
+.gd-sec { padding: 10px 0; border-bottom: 1px dashed var(--color-border); }
+.gd-sec h4 { margin: 0 0 6px; font-size: .9rem; color: var(--color-primary); }
+.gd-sec p { margin: 4px 0; font-size: .9rem; }
+.gd-list, .gd-hazards { list-style: none; margin: 0; padding: 0; }
+.gd-list li, .gd-hazards li { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; padding: 3px 0; font-size: .9rem; }
+.gd-list small { display: block; font-size: .75rem; color: var(--color-muted); }
+.gd-list strong { white-space: nowrap; }
+.gd-hazards em { font-style: normal; text-align: right; font-size: .85rem; }
+.gd-hazards .ok { color: #2e7d5b; }
+.gd-hazards .ng { color: #c0392b; font-weight: 700; }
+.gd-estimate { display: flex; justify-content: space-between; align-items: center; gap: 12px; background: var(--color-bg-soft); border-radius: 8px; padding: 8px 12px; margin: 8px 0; }
+.gd-estimate p { margin: 0; }
+.gd-estimate small { display: block; font-size: .75rem; color: var(--color-muted); }
+.gd-estimate .btn { flex-shrink: 0; }
+.gd-muted { color: var(--color-muted); font-size: .78rem !important; }
+.gd-warn { color: #b9770e; font-size: .82rem !important; }
+.gd-inline { display: block; color: var(--color-muted); font-size: .78rem; }
+.gd-samples summary { cursor: pointer; font-size: .82rem; color: var(--color-primary); margin-top: 4px; }
+.gd-samples table { width: 100%; border-collapse: collapse; font-size: .78rem; margin-top: 6px; }
+.gd-samples th, .gd-samples td { padding: 4px 6px; border-bottom: 1px solid var(--color-border); text-align: left; white-space: nowrap; }
+.gd-source { font-size: .72rem !important; color: var(--color-muted); text-align: right; }
+.gd-hazards li > span { white-space: nowrap; flex-shrink: 0; }
