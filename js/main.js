@@ -275,6 +275,90 @@
     renderSaved();
   }
 
+  // Address lookup: geocode with GSI address search, then build research links
+  var AREA_BY_CITY = { '加古川市': 'kakogawa', '高砂市': 'takasago', '姫路市': 'himeji', '尼崎市': 'amagasaki' };
+  var geoInput = document.getElementById('geo-address');
+  var geoButton = document.getElementById('geo-search');
+  var geoStatus = document.getElementById('geo-status');
+  var geoLinks = document.getElementById('geo-links');
+  var currentAddress = '';
+
+  function setLink(id, href) { document.getElementById(id).href = href; }
+
+  function detectArea(text) {
+    for (var city in AREA_BY_CITY) {
+      if (text.indexOf(city) !== -1) return AREA_BY_CITY[city];
+    }
+    return null;
+  }
+
+  function applyArea(text) {
+    var area = detectArea(text);
+    if (area && simForm) {
+      simForm.elements.area.value = area;
+      simForm.dispatchEvent(new Event('change'));
+    }
+    return area;
+  }
+
+  function showLinks(address, lat, lon) {
+    currentAddress = address;
+    var q = encodeURIComponent(address);
+    setLink('geo-gmap', 'https://www.google.com/maps/search/?api=1&query=' + (lat ? lat + ',' + lon : q));
+    if (lat) {
+      setLink('geo-street', 'https://www.google.com/maps/@?api=1&map_action=pano&viewpoint=' + lat + ',' + lon);
+      setLink('geo-hazard', 'https://disaportal.gsi.go.jp/maps/?ll=' + lat + ',' + lon + '&z=16&base=pale');
+      setLink('geo-gsi', 'https://maps.gsi.go.jp/#17/' + lat + '/' + lon + '/');
+    } else {
+      setLink('geo-street', 'https://www.google.com/maps/search/?api=1&query=' + q);
+      setLink('geo-hazard', 'https://disaportal.gsi.go.jp/');
+      setLink('geo-gsi', 'https://maps.gsi.go.jp/');
+    }
+    geoLinks.hidden = false;
+    var memo = document.getElementById('sim-name');
+    if (memo && !memo.value) memo.value = address.replace(/^兵庫県/, '');
+  }
+
+  function geocode() {
+    var address = geoInput.value.trim();
+    if (!address) { geoStatus.textContent = '住所を入力してください。'; return; }
+    geoStatus.textContent = '検索中…';
+    geoButton.disabled = true;
+    fetch('https://msearch.gsi.go.jp/address-search/AddressSearch?q=' + encodeURIComponent(address))
+      .then(function (res) { if (!res.ok) throw new Error(res.status); return res.json(); })
+      .then(function (list) {
+        if (!list || !list.length) throw new Error('not found');
+        var hit = list[0];
+        var lon = hit.geometry.coordinates[0].toFixed(6);
+        var lat = hit.geometry.coordinates[1].toFixed(6);
+        var title = hit.properties.title || address;
+        var area = applyArea(title) || applyArea(address);
+        geoStatus.innerHTML = '📍 ' + esc(title) + '（' + lat + ', ' + lon + '）' +
+          (area ? '' : '<br>※ 対象4市（加古川・高砂・姫路・尼崎）以外の可能性があります。');
+        showLinks(address, lat, lon);
+      })
+      .catch(function () {
+        applyArea(address);
+        geoStatus.textContent = '位置を特定できませんでした。住所で各サイトを開けるようにしています。';
+        showLinks(address, null, null);
+      })
+      .then(function () { geoButton.disabled = false; });
+  }
+
+  if (geoButton) {
+    geoButton.addEventListener('click', geocode);
+    geoInput.addEventListener('keydown', function (e) {
+      if (e.key === 'Enter') { e.preventDefault(); geocode(); }
+    });
+    geoLinks.querySelectorAll('[data-copy]').forEach(function (a) {
+      a.addEventListener('click', function () {
+        if (currentAddress && navigator.clipboard) {
+          navigator.clipboard.writeText(currentAddress).catch(function () {});
+        }
+      });
+    });
+  }
+
   var year = document.getElementById('year');
   if (year) year.textContent = new Date().getFullYear();
 })();

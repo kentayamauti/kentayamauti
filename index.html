@@ -174,6 +174,31 @@
         <p class="section-lead">路線価の土地値は「願望」になりがち。解体費や諸費用を差し引いた<strong>実質土地値</strong>が買値を上回るかで、下値の固さを判定します。</p>
         <div class="sim-layout">
           <form id="sim-form" class="sim-form">
+            <fieldset class="geo">
+              <legend>所在地から調べる</legend>
+              <div class="geo-row">
+                <input type="text" id="geo-address" placeholder="例：兵庫県加古川市加古川町篠原町" aria-label="物件の住所" autocomplete="street-address">
+                <button type="button" class="btn btn-primary btn-sm" id="geo-search">調べる</button>
+              </div>
+              <p class="geo-status" id="geo-status" aria-live="polite"></p>
+              <div class="geo-links" id="geo-links" hidden>
+                <p class="geo-step">① 路線価を確認して下の「前面路線価」に入力</p>
+                <div class="geo-btns">
+                  <a class="geo-btn" data-copy target="_blank" rel="noopener" href="https://www.chikamap.jp/">全国地価マップ<small>路線価・公示地価</small></a>
+                  <a class="geo-btn" data-copy target="_blank" rel="noopener" href="https://www.rosenka.nta.go.jp/">国税庁 路線価図<small>公式・PDF</small></a>
+                </div>
+                <p class="geo-step">② 成約価格・災害リスク・現地を確認</p>
+                <div class="geo-btns">
+                  <a class="geo-btn" data-copy target="_blank" rel="noopener" href="https://www.reinfolib.mlit.go.jp/">不動産情報ライブラリ<small>成約価格・用途地域</small></a>
+                  <a class="geo-btn" id="geo-hazard" target="_blank" rel="noopener" href="https://disaportal.gsi.go.jp/">重ねるハザードマップ<small>洪水・高潮・土砂</small></a>
+                  <a class="geo-btn" data-copy target="_blank" rel="noopener" href="https://www.hazardmap.pref.hyogo.jp/">兵庫県CGハザードマップ<small>県の詳細版</small></a>
+                  <a class="geo-btn" id="geo-gsi" target="_blank" rel="noopener" href="https://maps.gsi.go.jp/">地理院地図<small>標高・地形</small></a>
+                  <a class="geo-btn" id="geo-gmap" target="_blank" rel="noopener" href="https://www.google.com/maps">Googleマップ<small>周辺施設・国道</small></a>
+                  <a class="geo-btn" id="geo-street" target="_blank" rel="noopener" href="https://www.google.com/maps">ストリートビュー<small>前面道路・接道</small></a>
+                </div>
+                <p class="sim-hint">「住所コピー」の付いたサイトは、住所をクリップボードにコピーして開きます。開いた先の検索欄に貼り付けてください。</p>
+              </div>
+            </fieldset>
             <fieldset>
               <legend>物件</legend>
               <div class="sim-grid">

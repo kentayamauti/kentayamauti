@@ -278,3 +278,17 @@ a { color: var(--color-primary); }
   .sim-grid, .area-grid { grid-template-columns: 1fr; }
   .sim-actions { flex-direction: column; }
 }
+
+/* Address lookup */
+.geo { border-color: var(--color-primary) !important; }
+.geo-row { display: flex; gap: 8px; }
+.geo-row input { flex: 1; min-width: 0; padding: 10px 12px; font-size: 1rem; font-family: inherit; border: 1px solid var(--color-border); border-radius: 8px; background: #fafcfc; }
+.geo-row .btn { flex-shrink: 0; }
+.geo-status { font-size: .85rem; color: var(--color-muted); margin: 8px 0 0; }
+.geo-status:empty { display: none; }
+.geo-step { font-weight: 700; font-size: .85rem; color: var(--color-primary); margin: 14px 0 8px; }
+.geo-btns { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; }
+.geo-btn { display: block; padding: 10px 12px; border: 1px solid var(--color-border); border-radius: 8px; text-decoration: none; color: var(--color-text); font-weight: 700; font-size: .9rem; background: var(--color-bg-soft); line-height: 1.4; }
+.geo-btn:hover { border-color: var(--color-primary); background: #fff; }
+.geo-btn small { display: block; font-weight: 400; font-size: .75rem; color: var(--color-muted); }
+.geo-btn[data-copy] small::after { content: "住所コピー"; display: block; color: var(--color-accent); }
