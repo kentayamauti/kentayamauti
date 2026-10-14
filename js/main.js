@@ -1,24 +1,6 @@
 (function () {
   'use strict';
 
-  // Mobile navigation
-  var toggle = document.querySelector('.nav-toggle');
-  var nav = document.getElementById('global-nav');
-  if (toggle && nav) {
-    toggle.addEventListener('click', function () {
-      var open = nav.classList.toggle('open');
-      toggle.setAttribute('aria-expanded', String(open));
-      toggle.setAttribute('aria-label', open ? 'メニューを閉じる' : 'メニューを開く');
-    });
-    nav.querySelectorAll('a').forEach(function (link) {
-      link.addEventListener('click', function () {
-        nav.classList.remove('open');
-        toggle.setAttribute('aria-expanded', 'false');
-        toggle.setAttribute('aria-label', 'メニューを開く');
-      });
-    });
-  }
-
   // Self check
   var advice = {
     rosenka: '国税庁の路線価図で前面路線価を確認しましょう。15万円/㎡以下のエリアの土地値は「願望」になりやすく、強めの掛け目が必要です。',
@@ -67,43 +49,10 @@
           missing.map(function (key) { return '<li>' + advice[key] + '</li>'; }).join('') +
           '</ul>';
       }
-      html += '<a href="#contact" class="btn btn-primary">無料相談で詳しく聞く</a>';
 
       checkResult.innerHTML = html;
       checkResult.hidden = false;
       checkResult.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-    });
-  }
-
-  // Contact form (client-side validation only; connect to a backend/form service before going live)
-  var contactForm = document.getElementById('contact-form');
-  var formError = document.getElementById('form-error');
-  var formDone = document.getElementById('form-done');
-  if (contactForm) {
-    contactForm.addEventListener('submit', function (e) {
-      e.preventDefault();
-      var errors = [];
-      var fields = [
-        { el: contactForm.name, msg: 'お名前を入力してください。' },
-        { el: contactForm.email, msg: 'メールアドレスを正しく入力してください。' },
-        { el: contactForm.topic, msg: 'ご相談内容を選択してください。' }
-      ];
-      fields.forEach(function (f) {
-        var ok = f.el.value.trim() !== '' && f.el.checkValidity();
-        f.el.classList.toggle('invalid', !ok);
-        if (!ok) errors.push(f.msg);
-      });
-      if (!contactForm.privacy.checked) errors.push('個人情報の取り扱いへの同意が必要です。');
-
-      if (errors.length) {
-        formError.innerHTML = errors.join('<br>');
-        formError.hidden = false;
-        return;
-      }
-      formError.hidden = true;
-      contactForm.hidden = true;
-      formDone.hidden = false;
-      formDone.scrollIntoView({ behavior: 'smooth', block: 'center' });
     });
   }
 
@@ -475,6 +424,4 @@
     });
   }
 
-  var year = document.getElementById('year');
-  if (year) year.textContent = new Date().getFullYear();
 })();
