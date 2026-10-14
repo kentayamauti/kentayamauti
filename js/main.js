@@ -177,6 +177,7 @@
     document.getElementById('sim-notes').innerHTML = r.notes.map(function (n) { return '<li>' + n + '</li>'; }).join('');
   }
 
+  // Saved candidates: the page's shared db when available (claude.ai artifact), otherwise this browser
   function loadSaved() {
     try { return JSON.parse(localStorage.getItem(STORAGE_KEY)) || []; } catch (e) { return []; }
   }
@@ -184,17 +185,39 @@
     try { localStorage.setItem(STORAGE_KEY, JSON.stringify(list)); } catch (e) { /* storage unavailable */ }
   }
   var saved = loadSaved();
+  var savedDb = null;
+  var savedHint = document.getElementById('sim-saved-hint');
 
   function renderSaved() {
     var wrap = document.getElementById('sim-saved-wrap');
     wrap.hidden = saved.length === 0;
     document.getElementById('sim-saved').innerHTML = saved.map(function (c, i) {
-      return '<tr><td>' + esc(c.name) + '</td><td>' + AREA_LABEL[c.area] + '</td><td>' + man(c.total) +
+      return '<tr><td>' + esc(c.name) + '</td><td>' + (AREA_LABEL[c.area] || '') + '</td><td>' + man(c.total) +
         '</td><td>' + man(c.netLand) + '</td><td class="' + (c.margin >= 0 ? 'pos' : 'neg') + '">' +
         (c.margin >= 0 ? '+' : '−') + man(Math.abs(c.margin)) + '</td><td>' + pct(c.gross) +
-        '</td><td><span class="grade grade-sm grade-' + c.grade + '">' + c.grade + '</span></td>' +
-        '<td><button type="button" class="link-btn" data-remove="' + i + '">削除</button></td></tr>';
+        '</td><td><span class="grade grade-sm grade-' + esc(c.grade) + '">' + esc(c.grade) + '</span></td>' +
+        '<td class="row-actions">' + (c.inputs ? '<button type="button" class="link-btn link-open" data-open="' + i + '">開く</button>' : '') +
+        '<button type="button" class="link-btn" data-remove="' + i + '">削除</button></td></tr>';
     }).join('');
+  }
+
+  function formInputs(f) {
+    var out = {};
+    Array.prototype.forEach.call(f.elements, function (el) {
+      if (!el.name) return;
+      out[el.name] = el.type === 'checkbox' ? el.checked : el.value;
+    });
+    return out;
+  }
+
+  function restoreInputs(f, inputs) {
+    Object.keys(inputs).forEach(function (name) {
+      var el = f.elements[name];
+      if (!el) return;
+      if (el.type === 'checkbox') el.checked = !!inputs[name];
+      else el.value = inputs[name];
+    });
+    f.dispatchEvent(new Event('change'));
   }
 
   if (simForm) {
@@ -207,23 +230,61 @@
     document.getElementById('sim-save').addEventListener('click', function () {
       if (!lastResult) return;
       var nameInput = document.getElementById('sim-name');
-      saved.push({
+      var item = {
         name: nameInput.value.trim() || '候補' + (saved.length + 1),
         area: lastResult.area, total: lastResult.total, netLand: lastResult.netLand,
-        margin: lastResult.margin, gross: lastResult.gross, grade: lastResult.grade
-      });
+        margin: lastResult.margin, gross: isFinite(lastResult.gross) ? lastResult.gross : null,
+        grade: lastResult.grade, inputs: formInputs(simForm), savedAt: Date.now()
+      };
       nameInput.value = '';
-      storeSaved(saved);
-      renderSaved();
+      if (savedDb) {
+        savedDb.add(item).catch(function (e) {
+          savedHint.textContent = e && e.code === 'quota_exceeded'
+            ? '保存できる件数の上限です。不要な候補を削除してください。'
+            : '保存できませんでした。もう一度お試しください。';
+        });
+      } else {
+        saved.push(item);
+        storeSaved(saved);
+        renderSaved();
+      }
     });
     document.getElementById('sim-saved').addEventListener('click', function (e) {
+      var open = e.target.getAttribute('data-open');
+      if (open !== null && saved[open]) {
+        restoreInputs(simForm, saved[open].inputs);
+        document.getElementById('simulator').scrollIntoView({ behavior: 'smooth' });
+        return;
+      }
       var idx = e.target.getAttribute('data-remove');
       if (idx === null) return;
-      saved.splice(Number(idx), 1);
-      storeSaved(saved);
-      renderSaved();
+      var item = saved[Number(idx)];
+      if (savedDb && item && item._id) {
+        savedDb.doc(item._id).delete().catch(function () { savedHint.textContent = '削除できませんでした。'; });
+      } else {
+        saved.splice(Number(idx), 1);
+        storeSaved(saved);
+        renderSaved();
+      }
     });
     renderSaved();
+
+    if (window.claude && typeof window.claude.use === 'function') {
+      window.claude.use('db').then(function (db) {
+        if (!db) return;
+        savedDb = db.collection('candidates');
+        savedHint.textContent = '候補はこのツールに保存され、スマホとパソコンのどちらからでも見られます。';
+        savedDb.orderBy('savedAt').onSnapshot(function (snap) {
+          saved = snap.docs.map(function (d) { return Object.assign({ _id: d.id }, d.data()); });
+          renderSaved();
+        }, function () {
+          savedDb = null;
+          saved = loadSaved();
+          savedHint.textContent = '候補はこのブラウザにのみ保存されます。';
+          renderSaved();
+        });
+      });
+    }
   }
 
   // Address lookup: geocode with GSI address search, then build research links
