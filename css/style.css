@@ -260,3 +260,35 @@ main > .section:first-child { padding-top: 40px; }
 @media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } .btn { transition: none; } .btn:hover { transform: none; } }
 .row-actions { display: flex; gap: 12px; }
 .link-open { color: var(--color-primary); }
+
+/* Verdict with buy lines */
+.sim-verdict { display: block; }
+.verdict-head { display: flex; gap: 16px; align-items: center; }
+.verdict-status { margin: 0 0 2px; font-weight: 700; font-size: 1.15rem; }
+.verdict-status small { display: block; font-weight: 400; font-size: .78rem; color: var(--color-muted); }
+.status-buy { color: var(--color-good); }
+.status-allow { color: var(--color-warn); }
+.status-nego { color: var(--color-primary); }
+.status-out { color: var(--color-bad); }
+.buyline { margin-top: 14px; display: grid; gap: 8px; }
+.buyline-row { display: grid; grid-template-columns: 1fr auto; grid-template-areas: "label value" "label diff"; align-items: baseline; column-gap: 12px; background: var(--color-bg-soft); border-radius: 8px; padding: 8px 12px; font-variant-numeric: tabular-nums; }
+.buyline-row span { grid-area: label; font-weight: 700; font-size: .9rem; }
+.buyline-row small { display: block; font-weight: 400; font-size: .72rem; color: var(--color-muted); }
+.buyline-row strong { grid-area: value; text-align: right; font-size: 1.15rem; color: var(--color-primary-dark); }
+.buyline-row em { grid-area: diff; text-align: right; font-style: normal; font-size: .8rem; font-weight: 700; }
+
+/* Listing intake */
+.intake { border-color: var(--color-accent) !important; }
+.intake textarea { width: 100%; padding: 10px 12px; font: inherit; font-size: .95rem; border: 1px solid var(--color-border); border-radius: 8px; background: var(--color-field); color: var(--color-text); resize: vertical; min-height: 5.5em; }
+.intake-row { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-top: 8px; }
+.intake-row #intake-run { margin-left: auto; }
+.file-btn { position: relative; overflow: hidden; }
+.file-btn input { position: absolute; inset: 0; opacity: 0; cursor: pointer; }
+.intake-files { font-size: .8rem; color: var(--color-muted); }
+.intake-status { font-size: .85rem; }
+.intake-status:empty { display: none; }
+.intake-status p { margin: 8px 0 0; }
+.intake-status ul { margin: 6px 0 0; padding-left: 1.2em; color: var(--color-warn); }
+.intake-next { color: var(--color-primary); }
+.needs-input { outline: 2px solid var(--color-accent); outline-offset: 1px; }
+[hidden] { display: none !important; }

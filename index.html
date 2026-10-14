@@ -34,6 +34,16 @@
         <p class="section-lead">路線価の土地値は「願望」になりがち。解体費や諸費用を差し引いた<strong>実質土地値</strong>が買値を上回るかで、下値の固さを判定します。</p>
         <div class="sim-layout">
           <form id="sim-form" class="sim-form">
+            <fieldset class="intake" id="intake">
+              <legend>物件情報を読み取る</legend>
+              <textarea id="intake-text" rows="4" placeholder="ポータルサイトの物件ページを全選択してコピーし、ここに貼り付け"></textarea>
+              <div class="intake-row">
+                <label class="btn btn-ghost btn-sm file-btn" id="intake-pick" hidden>スクショを添付<input type="file" id="intake-images" accept="image/*" multiple></label>
+                <span class="intake-files" id="intake-files"></span>
+                <button type="button" class="btn btn-primary btn-sm" id="intake-run">読み取る</button>
+              </div>
+              <div class="intake-status" id="intake-status" aria-live="polite"></div>
+            </fieldset>
             <fieldset class="geo">
               <legend>所在地から調べる</legend>
               <div class="geo-row">
@@ -89,6 +99,7 @@
               <label class="sim-check"><input type="checkbox" name="junction">主要国道の交差点付近（徒歩圏・視認性あり）</label>
               <label class="sim-check"><input type="checkbox" name="boundary" checked>境界確定済み</label>
               <label class="sim-check"><input type="checkbox" name="split">分筆が必要</label>
+              <label class="sim-check"><input type="checkbox" name="norebuild" id="norebuild">再建築不可（接道2m未満など）</label>
             </fieldset>
             <fieldset>
               <legend>賃貸運営</legend>
@@ -108,6 +119,7 @@
                 <label>境界確定費（万円）<input type="number" name="boundaryCost" value="40" min="0" step="5"></label>
                 <label>分筆費用（万円）<input type="number" name="splitCost" value="30" min="0" step="5"></label>
                 <label>購入諸費用（購入価格の%）<input type="number" name="buyCostRate" value="7" min="0" step="0.5"></label>
+                <label>目標表面利回り（%）<input type="number" name="targetYield" value="12" min="0" step="0.5"></label>
                 <label>運営経費率（家賃の%）<input type="number" name="opexRate" value="20" min="0" max="100" step="1"></label>
               </div>
               <p class="sim-hint">購入諸費用には仲介手数料・登記費用・不動産取得税などを含みます。売却時の消費税は、法人など課税事業者が建物付きで売る場合に建物部分に発生するため、本試算は更地での売却を想定しています。</p>
@@ -131,7 +143,7 @@
           <h3>保存した候補の比較</h3>
           <div class="table-scroll">
             <table class="saved-table">
-              <thead><tr><th>物件</th><th>エリア</th><th>購入総額</th><th>実質土地値</th><th>マージン</th><th>表面利回り</th><th>判定</th><th></th></tr></thead>
+              <thead><tr><th>物件</th><th>エリア</th><th>購入総額</th><th>実質土地値</th><th>マージン</th><th>表面利回り</th><th>安全ライン</th><th>判定</th><th></th></tr></thead>
               <tbody id="sim-saved"></tbody>
             </table>
           </div>
